@@ -17,6 +17,8 @@ CLIENT_SEC  = None
 AUTH_CODE   = None
 USER        = None
 REDIR_FOO   = 'http%3A%2F%2Fmoc.sirtetris.com%2Fanihilist%2Fechocode.php'
+DISP_KEY    = None
+SORT_KEY    = None
 
 def setUser():
     global USER
@@ -102,7 +104,7 @@ def cursesShutdown():
     curses.endwin()
 
 def addListLine(scr, y, x_max, anime):
-    title = anime['anime']['title_japanese'].strip()
+    title = anime['anime'][DISP_KEY].strip()
     ep_total = anime['anime']['total_episodes']
     if ep_total == 0: ep_total = '?'
     ep_seen = anime['episodes_watched']
@@ -114,7 +116,7 @@ def addListLine(scr, y, x_max, anime):
 def printList(scr, anime_watching, selected, offset):
     (y_max,x_max)=scr.getmaxyx()
     anime_watchings = sorted(anime_watching,
-                             key=lambda k: k['anime']['title_romaji'])
+                             key=lambda k: k['anime'][SORT_KEY])
     y=0
     while y+1<y_max and y+offset<len(anime_watchings):
         anime = anime_watchings[y+offset]
@@ -126,8 +128,23 @@ def printList(scr, anime_watching, selected, offset):
             addListLine(scr, y, x_max, anime)
         y+=1
 
+def setListLanguage(anime_list_data):
+    global DISP_KEY
+    global SORT_KEY
+
+    if anime_list_data['title_language'] == 'japanese':
+        DISP_KEY = 'title_japanese'
+        SORT_KEY = 'title_romaji'
+    elif anime_list_data['title_language'] == 'romaji':
+        DISP_KEY = 'title_romaji'
+        SORT_KEY = 'title_romaji'
+    else:
+        DISP_KEY = 'title_english'
+        SORT_KEY = 'title_english'
+
 def main(stdscr):
     anime_list_data = getAnimeList()
+    setListLanguage(anime_list_data)
     anime_lists = anime_list_data['lists']
     anime_watching = anime_lists['watching']
 

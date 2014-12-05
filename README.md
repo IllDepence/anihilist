@@ -17,7 +17,7 @@ setup
 -----
 * write your anilist user[name|id] into the file `username`
 * run `python3 anihilist.py`
-* the program will ask you to generate an auth code on [this site](http://moc.sirtetris.com/anihilist/echocode.php), do so\
+* the program will ask you to generate an auth code on [this site](http://moc.sirtetris.com/anihilist/echocode.php), do so
     paste it in the prompt, hit \<ENTER>
 * from this point on, just run `python3 anihilist.py` to start anihilist
 
