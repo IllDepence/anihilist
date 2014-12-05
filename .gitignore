@@ -1,2 +1,4 @@
+*.swp
 *.pyc
 client_secret
+access_data.json
