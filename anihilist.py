@@ -6,6 +6,7 @@ import json
 import os
 import time
 import unicodedata
+from sys import stdin
 
 NAV_U       = 'k'
 NAV_D       = 'j'
@@ -31,20 +32,10 @@ def setClientSecret():
 
 def setAuthCode():
     global AUTH_CODE
-    with open('auth_code', 'r') as f:
-        auth_file_contents = f.read().rstrip()
-    f.close()
-    if len(auth_file_contents) == 0:
-        print('You have to generate an auth code:\n'
-              'http://moc.sirtetris.com/anihilist/echocode.php\n\n'
-              'Save it in the file auth_code, then press any key.')
-        input()
-        setAuthCode()
-    else:
-        AUTH_CODE = auth_file_contents
-        with open('auth_code', 'w') as f:
-            f.write('')
-        f.close()
+    print('You have to generate an auth code:\n'
+          'http://moc.sirtetris.com/anihilist/echocode.php\n\n'
+          'Paste it here, then continue with <ENTER>.')
+    AUTH_CODE = stdin.readline().strip()
 
 def setup():
     setUser()
@@ -138,7 +129,6 @@ def printList(scr, anime_watching, selected, offset):
 
 #def main():
 def main(stdscr):
-    setup()
     anime_list_data = getAnimeList()
     anime_lists = anime_list_data['lists']
     anime_watching = anime_lists['watching']
@@ -173,6 +163,7 @@ def main(stdscr):
             pass
 
 if __name__ == '__main__':
+    setup()
     curses.wrapper(main)
 
 #if __name__ == '__main__':
