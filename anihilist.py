@@ -117,8 +117,22 @@ def addListLine(stdscr, y, x_max, anime):
     if ep_total == 0: ep_total = '?'
     ep_seen = anime['episodes_watched']
     ep_info = ' [{0}/{1}]'.format(ep_seen,ep_total)
+    stdscr.addstr(y, 0, ' '*x_max)
     stdscr.addstr(y, 0, title)
     stdscr.addstr(y, (x_max-len(ep_info)), ep_info)
+
+def printList(stdscr, x_max, anime_watching, selected):
+    anime_watchings = sorted(anime_watching,
+                             key=lambda k: k['anime']['title_romaji'])
+    y=0
+    for anime in anime_watchings:
+        if selected == y:
+            stdscr.standout()
+            addListLine(stdscr, y, x_max, anime)
+            stdscr.standend()
+        else:
+            addListLine(stdscr, y, x_max, anime)
+        y+=1
 
 #def main():
 def main(stdscr):
@@ -130,26 +144,23 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.clear()
     (y_max,x_max)=stdscr.getmaxyx()
-    y_max-=1
-    x_max-=1
-    x=0
-    y=0
+    y_max = len(anime_watching)-1
+    curs_y=0
+    curs_x=0
     stdscr.clear()
-    for anime in anime_watching:
-        addListLine(stdscr, y, x_max, anime)
-        y+=1
 
     while True:
-        stdscr.addstr(y,x,'X')
+        stdscr.move(0,0)
+        printList(stdscr, x_max, anime_watching, curs_y)
         c = stdscr.getkey()
-        if(c==NAV_U and y>0):
-            y-=1
-        if(c==NAV_D and y<y_max):
-            y+=1
-        if(c==NAV_L and x>0):
-            x-=1
-        if(c==NAV_R and x<x_max):
-            x+=1
+        if(c==NAV_U and curs_y>0):
+            curs_y-=1
+        if(c==NAV_D and curs_y<y_max):
+            curs_y+=1
+        if(c==NAV_L and curs_x>0):
+            curs_x-=1
+        if(c==NAV_R and curs_x<x_max):
+            curs_x+=1
     #window.scroll([lines=1]) !!!
 
 if __name__ == '__main__':
