@@ -91,7 +91,6 @@ def refreshAccessToken(refresh_token):
     return access_data['access_token']
 
 def getAnimeList():
-    #TODO: maybe switch back to /raw as soon as titles are included
     url = ('/api/user/{0}/animelist?access_token='
            '{1}').format(USER, getAccessToken())
     return callAPI('GET', url)
@@ -127,7 +126,6 @@ def printList(scr, anime_watching, selected, offset):
             addListLine(scr, y, x_max, anime)
         y+=1
 
-#def main():
 def main(stdscr):
     anime_list_data = getAnimeList()
     anime_lists = anime_list_data['lists']
@@ -165,6 +163,3 @@ def main(stdscr):
 if __name__ == '__main__':
     setup()
     curses.wrapper(main)
-
-#if __name__ == '__main__':
-#    main()
