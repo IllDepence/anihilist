@@ -14,7 +14,14 @@ NAV_R       = 'l'
 CLIENT_ID   = 'sirtetris-eky4q'
 CLIENT_SEC  = None
 AUTH_CODE   = None
+USER        = None
 REDIR_FOO   = 'http%3A%2F%2Fmoc.sirtetris.com%2Fanihilist%2Fechocode.php'
+
+def setUser():
+    global USER
+    with open('username', 'r') as f:
+        USER = f.read().rstrip()
+    f.close()
 
 def setClientSecret():
     global CLIENT_SEC
@@ -40,12 +47,13 @@ def setAuthCode():
         f.close()
 
 def setup():
+    setUser()
     setClientSecret()
     if not os.path.exists('access_data.json'):
         setAuthCode()
         newAccessToken()
     else:
-        checkAccessToken() # may have to be refreshed
+        getAccessToken() # may have to be refreshed
 
 def callAPI(method, url, data=None):
     conn = http.client.HTTPSConnection('anilist.co', 443)
@@ -64,17 +72,16 @@ def newAccessToken():
         f.write(json.dumps(access_data))
     f.close()
 
-def checkAccessToken():
+def getAccessToken():
     with open('access_data.json', 'r') as f:
         access_json = f.read().rstrip()
     f.close()
     access_data = json.loads(access_json)
     now = int(time.time())
     if (now+60) > access_data['expires']:
-        refreshAccessToken(access_data['refresh_token'])
-        print('refreshing')
+        return refreshAccessToken(access_data['refresh_token'])
     else:
-        print('all good')
+        return access_data['access_token']
 
 def refreshAccessToken(refresh_token):
     url = ('/api/auth/access_token?grant_type=refresh_token'
@@ -90,6 +97,13 @@ def refreshAccessToken(refresh_token):
         f.truncate()
         f.write(json.dumps(access_data))
     f.close()
+    return access_data['access_token']
+
+def getAnimeList():
+    #TODO: maybe switch back to /raw as soon as titles are included
+    url = ('/api/user/{0}/animelist?access_token='
+           '{1}').format(USER, getAccessToken())
+    return callAPI('GET', url)
 
 def cursesShutdown():
     curses.nocbreak()
@@ -97,21 +111,26 @@ def cursesShutdown():
     curses.echo()
     curses.endwin()
 
-#def main(stdscr):
-def main():
+#def main():
+def main(stdscr):
     setup()
-    print('done')
+    animeListData = getAnimeList()
+    animeLists = animeListData['lists']
+    animeWatching = animeLists['watching']
 
-"""
     stdscr.clear()
     (y_max,x_max)=stdscr.getmaxyx()
     y_max-=1
     x_max-=1
     x=0
     y=0
+    stdscr.clear()
+    for anime in animeWatching:
+        stdscr.addstr(y,x,'{0}'.format(anime['anime']['title_japanese']))
+        y+=1
+
     while True:
-        stdscr.clear()
-        stdscr.addstr(y,x,str(token))
+        stdscr.addstr(y,x,'X')
         c = stdscr.getkey()
         if(c==NAV_U and y>0):
             y-=1
@@ -121,10 +140,9 @@ def main():
             x-=1
         if(c==NAV_R and x<x_max):
             x+=1
-"""
-
-#if __name__ == '__main__':
-#    curses.wrapper(main)
 
 if __name__ == '__main__':
-    main()
+    curses.wrapper(main)
+
+#if __name__ == '__main__':
+#    main()
