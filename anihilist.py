@@ -111,27 +111,29 @@ def cursesShutdown():
     curses.echo()
     curses.endwin()
 
-def addListLine(stdscr, y, x_max, anime):
-    title = anime['anime']['title_japanese']
+def addListLine(scr, y, x_max, anime):
+    title = anime['anime']['title_japanese'].strip()
     ep_total = anime['anime']['total_episodes']
     if ep_total == 0: ep_total = '?'
     ep_seen = anime['episodes_watched']
     ep_info = ' [{0}/{1}]'.format(ep_seen,ep_total)
-    stdscr.addstr(y, 0, ' '*x_max)
-    stdscr.addstr(y, 0, title)
-    stdscr.addstr(y, (x_max-len(ep_info)), ep_info)
+    scr.addstr(y, 0, ' '*x_max)
+    scr.addstr(y, 0, title)
+    scr.addstr(y, (x_max-len(ep_info)), ep_info)
 
-def printList(stdscr, x_max, anime_watching, selected):
+def printList(scr, anime_watching, selected, offset):
+    (y_max,x_max)=scr.getmaxyx()
     anime_watchings = sorted(anime_watching,
                              key=lambda k: k['anime']['title_romaji'])
     y=0
-    for anime in anime_watchings:
+    while y+1<y_max and y+offset<len(anime_watchings):
+        anime = anime_watchings[y+offset]
         if selected == y:
-            stdscr.standout()
-            addListLine(stdscr, y, x_max, anime)
-            stdscr.standend()
+            scr.standout()
+            addListLine(scr, y, x_max, anime)
+            scr.standend()
         else:
-            addListLine(stdscr, y, x_max, anime)
+            addListLine(scr, y, x_max, anime)
         y+=1
 
 #def main():
@@ -144,24 +146,31 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.clear()
     (y_max,x_max)=stdscr.getmaxyx()
-    y_max = len(anime_watching)-1
+    y_max_nav = min((len(anime_watching)-1), y_max-2)
+    list_max_nav = len(anime_watching)-1
     curs_y=0
-    curs_x=0
+    offset=0
+    c=None
     stdscr.clear()
 
-    while True:
+    while c != 'q':
         stdscr.move(0,0)
-        printList(stdscr, x_max, anime_watching, curs_y)
+        printList(stdscr, anime_watching, curs_y, offset)
         c = stdscr.getkey()
-        if(c==NAV_U and curs_y>0):
-            curs_y-=1
-        if(c==NAV_D and curs_y<y_max):
-            curs_y+=1
-        if(c==NAV_L and curs_x>0):
-            curs_x-=1
-        if(c==NAV_R and curs_x<x_max):
-            curs_x+=1
-    #window.scroll([lines=1]) !!!
+        if c==NAV_U:
+            if curs_y==0 and offset != 0:
+                offset-=1
+            elif curs_y>0:
+                curs_y-=1
+        if c==NAV_D:
+            if curs_y<y_max_nav:
+                curs_y+=1
+            elif curs_y+offset<list_max_nav:
+                offset+=1
+        if c==NAV_L:
+            pass
+        if c==NAV_R:
+            pass
 
 if __name__ == '__main__':
     curses.wrapper(main)
