@@ -111,13 +111,23 @@ def cursesShutdown():
     curses.echo()
     curses.endwin()
 
+def addListLine(stdscr, y, x_max, anime):
+    title = anime['anime']['title_japanese']
+    ep_total = anime['anime']['total_episodes']
+    if ep_total == 0: ep_total = '?'
+    ep_seen = anime['episodes_watched']
+    ep_info = ' [{0}/{1}]'.format(ep_seen,ep_total)
+    stdscr.addstr(y, 0, title)
+    stdscr.addstr(y, (x_max-len(ep_info)), ep_info)
+
 #def main():
 def main(stdscr):
     setup()
-    animeListData = getAnimeList()
-    animeLists = animeListData['lists']
-    animeWatching = animeLists['watching']
+    anime_list_data = getAnimeList()
+    anime_lists = anime_list_data['lists']
+    anime_watching = anime_lists['watching']
 
+    curses.curs_set(0)
     stdscr.clear()
     (y_max,x_max)=stdscr.getmaxyx()
     y_max-=1
@@ -125,8 +135,8 @@ def main(stdscr):
     x=0
     y=0
     stdscr.clear()
-    for anime in animeWatching:
-        stdscr.addstr(y,x,'{0}'.format(anime['anime']['title_japanese']))
+    for anime in anime_watching:
+        addListLine(stdscr, y, x_max, anime)
         y+=1
 
     while True:
@@ -140,6 +150,7 @@ def main(stdscr):
             x-=1
         if(c==NAV_R and x<x_max):
             x+=1
+    #window.scroll([lines=1]) !!!
 
 if __name__ == '__main__':
     curses.wrapper(main)
