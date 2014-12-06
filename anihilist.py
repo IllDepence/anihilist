@@ -289,10 +289,10 @@ def main(stdscr):
 
         if list_type==LIST_ANIME:
             printList(stdscr, anime_watchings, curs_y[LIST_ANIME],
-                            offset[list_type], xdcc_info)
+                            offset[LIST_ANIME], xdcc_info)
         elif list_type==LIST_XDCC:
             printPkgList(stdscr, anime_curs, curs_y[LIST_XDCC], xdcc_info,
-                            offset[LIST_ANIME])
+                            offset[LIST_XDCC])
 
         c = stdscr.getkey()
         if c==NAV_U:
@@ -319,8 +319,8 @@ def main(stdscr):
             curs_y[LIST_XDCC]=0
             offset[LIST_XDCC]=0
             pkg_count = XDCCNavLimit(anime_curs, xdcc_info)
-            list_max_nav[LIST_XDCC] = pkg_count
-            y_max_nav[LIST_XDCC] = min((pkg_count-1), y_max-2)
+            list_max_nav[LIST_XDCC] = pkg_count-1
+            y_max_nav[LIST_XDCC] = min((pkg_count), y_max-2)
 
 if __name__ == '__main__':
     setup()
