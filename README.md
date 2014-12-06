@@ -27,6 +27,8 @@ usage
 * **i** -> toggle ID layer
 * **s** -> toggle XDCC layer
 * **c** -> toggle raw XDCC lines
+* **y** -> copy package number of current XDCC line to clipboard\*\*
 * **q** -> quit
 
 \* planned, not yet implemented
+\*\* requires xclip

@@ -268,6 +268,14 @@ def XDCCNavLimit(anime, xdcc_info):
     else:
         return 0
 
+def yankXDCC(xdcc_info, xdcc_key, idx):
+    pkgs = xdcc_info[xdcc_key]
+    pkg_num = pkgs[idx]['pkg_num']
+    try:
+        os.system('echo -n "{0}" | xclip'.format(pkg_num))
+    except:
+        pass
+
 def main(stdscr):
     anime_watchings = updateAnimeWatchings(getAnimeList())
     xdcc_info = getXDCCInfo()
@@ -324,6 +332,8 @@ def main(stdscr):
             toggleIDs()
         if c=='c' and list_type==LIST_XDCC:
             toggleRAW()
+        if c=='y' and list_type==LIST_XDCC:
+            yankXDCC(xdcc_info, xdcc_key, curs_y[LIST_XDCC])
         if c=='s' and xdcc_key in xdcc_info:
             stdscr.clear()
             list_type = 1-list_type
