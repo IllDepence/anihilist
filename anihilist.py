@@ -7,6 +7,7 @@ import os
 import re
 import time
 import unicodedata
+import urllib.parse
 import urllib.request
 from sys import stdin
 
@@ -15,7 +16,7 @@ NAV_D       = 'j'
 NAV_L       = 'h'
 NAV_R       = 'l'
 CLIENT_ID   = 'sirtetris-eky4q'
-CLIENT_SEC  = None
+CLIENT_SEC  = 'AcF5qNj4St50Bf0mPLLU9BgpRObb'
 USER        = None
 REDIR_FOO   = 'http%3A%2F%2Fmoc.sirtetris.com%2Fanihilist%2Fechocode.php'
 DISP_KEY    = None
@@ -28,12 +29,6 @@ def setUser():
         USER = f.read().rstrip()
     f.close()
 
-def setClientSecret():
-    global CLIENT_SEC
-    with open('client_secret', 'r') as f:
-        CLIENT_SEC = f.read().rstrip()
-    f.close()
-
 def getAuthCode():
     print('You have to generate an auth code:\n'
           'http://moc.sirtetris.com/anihilist/echocode.php\n\n'
@@ -42,7 +37,6 @@ def getAuthCode():
 
 def setup():
     setUser()
-    setClientSecret()
     if not os.path.exists('access_data.json'):
         auth_code = getAuthCode()
         newAccessToken(auth_code)
@@ -55,6 +49,11 @@ def callAPI(method, url, data=None):
     resp_obj = conn.getresponse()
     resp_json = resp_obj.read().decode('utf-8')
     resp_data = json.loads(resp_json)
+    #import pprint
+    #with open('debug', 'w') as f:
+    #    pprint.pprint(resp_data, f)
+    #    #f.write(data)
+    #f.close()
     return resp_data
 
 def newAccessToken(auth_code):
@@ -98,6 +97,23 @@ def getAnimeList():
            '{1}').format(USER, getAccessToken())
     return callAPI('GET', url)
 
+def updateWatchedCount(anime, delta):
+    old = int(anime['episodes_watched'])
+    new = old+delta
+    a_id = int(anime['anime']['id'])
+    url = ('/api/animelist?access_token='
+           '{1}').format(USER, getAccessToken())
+    data = urllib.parse.urlencode({'id':a_id,
+                                   'list_status':'watching',
+                                   'score':6.5,
+                                   'episodes_watched':new,
+                                   'rewatched':anime['rewatched'],
+                                   'notes':anime['notes'],
+                                   'advanced_rating_scores':'',
+                                   'custom_lists':'',
+                                   'hidden_default':''})
+    return callAPI('PUT', url, data=data)
+
 def cursesShutdown():
     curses.nocbreak()
     stdscr.keypad(False)
@@ -123,10 +139,8 @@ def getTitle(anime):
     else:
         return anime['anime'][DISP_KEY].strip()
 
-def printList(scr, anime_watching, selected, offset):
+def printList(scr, anime_watchings, selected, offset):
     (y_max,x_max)=scr.getmaxyx()
-    anime_watchings = sorted(anime_watching,
-                             key=lambda k: k['anime'][SORT_KEY])
     y=0
     while y+1<y_max and y+offset<len(anime_watchings):
         anime = anime_watchings[y+offset]
@@ -152,7 +166,7 @@ def setListLanguage(anime_list_data):
         DISP_KEY = 'title_english'
         SORT_KEY = 'title_english'
 
-def toggleIDs(anime_list_data):
+def toggleIDs():
     global ID_MODE
     ID_MODE = not ID_MODE
 
@@ -191,11 +205,16 @@ def getXDCCInfo():
         xdcc_info[key] = pkgs
     return xdcc_info
 
-def main(stdscr):
-    anime_list_data = getAnimeList()
+def updateAnimeWatchings(anime_list_data):
     setListLanguage(anime_list_data)
     anime_lists = anime_list_data['lists']
     anime_watching = anime_lists['watching']
+    anime_watchings = sorted(anime_watching,
+                             key=lambda k: k['anime'][SORT_KEY])
+    return anime_watchings
+
+def main(stdscr):
+    anime_watchings = updateAnimeWatchings(getAnimeList())
 
     xdcc_info = getXDCCInfo()
 
@@ -203,15 +222,15 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.clear()
     (y_max,x_max)=stdscr.getmaxyx()
-    y_max_nav = min((len(anime_watching)-1), y_max-2)
-    list_max_nav = len(anime_watching)-1
+    y_max_nav = min((len(anime_watchings)-1), y_max-2)
+    list_max_nav = len(anime_watchings)-1
     curs_y=0
     offset=0
     c=None
 
     while c != 'q':
         stdscr.move(0,0)
-        printList(stdscr, anime_watching, curs_y, offset)
+        printList(stdscr, anime_watchings, curs_y, offset)
         c = stdscr.getkey()
         if c==NAV_U:
             if curs_y==0 and offset != 0:
@@ -227,8 +246,11 @@ def main(stdscr):
             pass
         if c==NAV_R:
             pass
+            #anime = anime_watchings[curs_y+offset]
+            #updateWatchedCount(anime, 1)
+            #anime_watchings = updateAnimeWatchings(getAnimeList())
         if c=='i':
-            toggleIDs(anime_list_data)
+            toggleIDs()
 
 if __name__ == '__main__':
     setup()
