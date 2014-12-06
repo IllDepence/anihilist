@@ -22,6 +22,8 @@ REDIR_FOO   = 'http%3A%2F%2Fmoc.sirtetris.com%2Fanihilist%2Fechocode.php'
 DISP_KEY    = None
 SORT_KEY    = None
 ID_MODE     = False
+LIST_ANIME  = 0
+LIST_XDCC   = 1
 
 def setUser():
     global USER
@@ -171,6 +173,23 @@ def printList(scr, anime_watchings, selected, offset, xdcc_info):
             addListLine(scr, y, x_max, anime, xdcc_info)
         y+=1
 
+def printPkgList(scr, anime, selected, xdcc_info, offset):
+    (y_max,x_max)=scr.getmaxyx()
+    ep_seen = int(anime['episodes_watched'])
+    pkgs = xdcc_info[str(anime['anime']['id'])]
+    pkgss = sorted(pkgs, key=lambda k: k['ep_num'])
+    y=0
+    while y+1<y_max and y+offset<len(pkgss):
+        pkg = pkgss[y+offset]
+        if int(pkg['ep_num']) > ep_seen:
+            scr.standout()
+        if selected == y:
+            scr.addstr(y, 0, '-' + pkg['line'])
+        else:
+            scr.addstr(y, 0, ' ' + pkg['line'])
+        y+=1
+    scr.standend()
+
 def setListLanguage(anime_list_data):
     global DISP_KEY
     global SORT_KEY
@@ -232,6 +251,14 @@ def updateAnimeWatchings(anime_list_data):
                              key=lambda k: k['anime'][SORT_KEY])
     return anime_watchings
 
+def XDCCNavLimit(anime, xdcc_info):
+    key = str(anime['anime']['id'])
+    if key in xdcc_info:
+        pkgs = xdcc_info[key]
+        return len(pkgs)
+    else:
+        return 0
+
 def main(stdscr):
     anime_watchings = updateAnimeWatchings(getAnimeList())
     xdcc_info = getXDCCInfo()
@@ -240,35 +267,60 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.clear()
     (y_max,x_max)=stdscr.getmaxyx()
-    y_max_nav = min((len(anime_watchings)-1), y_max-2)
-    list_max_nav = len(anime_watchings)-1
-    curs_y=0
-    offset=0
+
+    y_max_nav=[None]*2
+    y_max_nav[LIST_ANIME] = min((len(anime_watchings)-1), y_max-2)
+    list_max_nav=[None]*2
+    list_max_nav[LIST_ANIME] = len(anime_watchings)-1
+    curs_y=[None]*2
+    curs_y[LIST_ANIME]=0
+    curs_y[LIST_XDCC]=0
+    offset=[None]*2
+    offset[LIST_ANIME]=0
+    offset[LIST_XDCC]=0
+
     c=None
+    list_type=0
 
     while c != 'q':
         stdscr.move(0,0)
-        printList(stdscr, anime_watchings, curs_y, offset, xdcc_info)
+        anime_curs = anime_watchings[curs_y[LIST_ANIME]+offset[LIST_ANIME]]
+        xdcc_key = str(anime_curs['anime']['id'])
+
+        if list_type==LIST_ANIME:
+            printList(stdscr, anime_watchings, curs_y[LIST_ANIME],
+                            offset[list_type], xdcc_info)
+        elif list_type==LIST_XDCC:
+            printPkgList(stdscr, anime_curs, curs_y[LIST_XDCC], xdcc_info,
+                            offset[LIST_ANIME])
+
         c = stdscr.getkey()
         if c==NAV_U:
-            if curs_y==0 and offset != 0:
-                offset-=1
-            elif curs_y>0:
-                curs_y-=1
+            if curs_y[list_type]==0 and offset[list_type] != 0:
+                offset[list_type]-=1
+            elif curs_y[list_type]>0:
+                curs_y[list_type]-=1
         if c==NAV_D:
-            if curs_y<y_max_nav:
-                curs_y+=1
-            elif curs_y+offset<list_max_nav:
-                offset+=1
+            if curs_y[list_type]<y_max_nav[list_type]:
+                curs_y[list_type]+=1
+            elif curs_y[list_type]+offset[list_type]<list_max_nav[list_type]:
+                offset[list_type]+=1
         if c==NAV_L:
             pass
         if c==NAV_R:
             pass
-            #anime = anime_watchings[curs_y+offset]
-            #updateWatchedCount(anime, 1)
+            #updateWatchedCount(anime_curs, 1)
             #anime_watchings = updateAnimeWatchings(getAnimeList())
-        if c=='i':
+        if c=='i' and show=='anime':
             toggleIDs()
+        if c=='s' and xdcc_key in xdcc_info:
+            stdscr.clear()
+            list_type = 1-list_type
+            curs_y[LIST_XDCC]=0
+            offset[LIST_XDCC]=0
+            pkg_count = XDCCNavLimit(anime_curs, xdcc_info)
+            list_max_nav[LIST_XDCC] = pkg_count
+            y_max_nav[LIST_XDCC] = min((pkg_count-1), y_max-2)
 
 if __name__ == '__main__':
     setup()
