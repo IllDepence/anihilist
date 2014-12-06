@@ -4,8 +4,10 @@ import curses
 import http.client
 import json
 import os
+import re
 import time
 import unicodedata
+import urllib.request
 from sys import stdin
 
 NAV_U       = 'k'
@@ -19,6 +21,7 @@ USER        = None
 REDIR_FOO   = 'http%3A%2F%2Fmoc.sirtetris.com%2Fanihilist%2Fechocode.php'
 DISP_KEY    = None
 SORT_KEY    = None
+ID_MODE     = False
 
 def setUser():
     global USER
@@ -104,7 +107,7 @@ def cursesShutdown():
     curses.endwin()
 
 def addListLine(scr, y, x_max, anime):
-    title = anime['anime'][DISP_KEY].strip()
+    title = getTitle(anime)
     ep_total = anime['anime']['total_episodes']
     if ep_total == 0: ep_total = '?'
     ep_seen = anime['episodes_watched']
@@ -112,6 +115,15 @@ def addListLine(scr, y, x_max, anime):
     scr.addstr(y, 0, ' '*x_max)
     scr.addstr(y, 0, title)
     scr.addstr(y, (x_max-len(ep_info)), ep_info)
+
+def getTitle(anime):
+    global ID_MODE
+    global DISP_KEY
+    global SORT_KEY
+    if ID_MODE:
+        return str(anime['anime']['id']).strip()
+    else:
+        return anime['anime'][DISP_KEY].strip()
 
 def printList(scr, anime_watching, selected, offset):
     (y_max,x_max)=scr.getmaxyx()
@@ -142,12 +154,54 @@ def setListLanguage(anime_list_data):
         DISP_KEY = 'title_english'
         SORT_KEY = 'title_english'
 
+def toggleIDs(anime_list_data):
+    global ID_MODE
+    ID_MODE = not ID_MODE
+
+def getXDCCInfo():
+    # xdcc.json file
+    with open('xdcc.json', 'r') as f:
+        xdcc_json = f.read().rstrip()
+    f.close()
+    xdcc_local_data = json.loads(xdcc_json)
+    urls = []
+    # get packlist data
+    for entry in xdcc_local_data:
+        if not entry['url'] in urls:
+            urls.append(entry['url'])
+    xdcc_lists = {}
+    for url in urls:
+        xdcc_lists[url] = str(urllib.request.urlopen(url).read(), 'utf-8')
+    # build xdcc info package
+    xdcc_info = {}
+    for entry in xdcc_local_data:
+        key = entry['al_id']
+        group = entry['group']
+        title = entry['packlist_title']
+        patt = re.compile('^#(([0-9]+).+?\[{0}].+?{1}'       # pack num & title
+                          '[^\[\(0-9]+?'                     # not [ ( 0-9
+                          '([0-9]+).*$)'.format(group, title), re.M) # ep num
+        xdcc_text = xdcc_lists[entry['url']]
+        matches = re.findall(patt, xdcc_text)
+        pkgs = []
+        for m in matches:
+            pkg = {}
+            pkg['line'] = m[0]
+            pkg['pkg_num'] = m[1]
+            pkg['ep_num'] = m[2]
+            pkgs.append(pkg)
+        xdcc_info[key] = pkgs
+    return xdcc_info
+
 def main(stdscr):
     anime_list_data = getAnimeList()
     setListLanguage(anime_list_data)
     anime_lists = anime_list_data['lists']
     anime_watching = anime_lists['watching']
 
+    xdcc_info = getXDCCInfo()
+
+    curses.use_default_colors()
     curses.curs_set(0)
     stdscr.clear()
     (y_max,x_max)=stdscr.getmaxyx()
@@ -156,7 +210,6 @@ def main(stdscr):
     curs_y=0
     offset=0
     c=None
-    stdscr.clear()
 
     while c != 'q':
         stdscr.move(0,0)
@@ -176,6 +229,8 @@ def main(stdscr):
             pass
         if c==NAV_R:
             pass
+        if c=='i':
+            toggleIDs(anime_list_data)
 
 if __name__ == '__main__':
     setup()
