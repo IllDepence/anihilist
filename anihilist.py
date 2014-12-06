@@ -311,7 +311,7 @@ def main(stdscr):
             pass
             #updateWatchedCount(anime_curs, 1)
             #anime_watchings = updateAnimeWatchings(getAnimeList())
-        if c=='i' and show=='anime':
+        if c=='i' and list_type==LIST_ANIME:
             toggleIDs()
         if c=='s' and xdcc_key in xdcc_info:
             stdscr.clear()
@@ -320,7 +320,7 @@ def main(stdscr):
             offset[LIST_XDCC]=0
             pkg_count = XDCCNavLimit(anime_curs, xdcc_info)
             list_max_nav[LIST_XDCC] = pkg_count-1
-            y_max_nav[LIST_XDCC] = min((pkg_count), y_max-2)
+            y_max_nav[LIST_XDCC] = min(pkg_count-1, y_max-2)
 
 if __name__ == '__main__':
     setup()

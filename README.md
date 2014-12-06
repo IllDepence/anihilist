@@ -2,12 +2,13 @@ anihilist
 =========
 a ncurses client for anilist.co
 
-![](http://moc.sirtetris.com/anihilist.png)
+![](http://moc.sirtetris.com/anihilist.gif)
 
 features
 --------
 * display anilist.co watching list
 * change number of watched episodes\*
+* integration of xdcc lists
 
 setup
 -----
