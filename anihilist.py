@@ -9,7 +9,7 @@ import time
 import unicodedata
 import urllib.parse
 import urllib.request
-from sys import stdin
+import sys
 
 NAV_U       = 'k'
 NAV_D       = 'j'
@@ -33,7 +33,7 @@ def getAuthCode():
     print('You have to generate an auth code:\n'
           'http://moc.sirtetris.com/anihilist/echocode.php\n\n'
           'Paste it here, then continue with <ENTER>.')
-    return stdin.readline().strip()
+    return sys.stdin.readline().strip()
 
 def setup():
     setUser()
@@ -120,8 +120,8 @@ def cursesShutdown():
     curses.echo()
     curses.endwin()
 
-def addListLine(scr, y, x_max, anime):
-    title = getTitle(anime)
+def addListLine(scr, y, x_max, anime, xdcc_info):
+    title = getTitle(anime, xdcc_info)
     ep_total = anime['anime']['total_episodes']
     if ep_total == 0: ep_total = '?'
     ep_seen = anime['episodes_watched']
@@ -130,26 +130,45 @@ def addListLine(scr, y, x_max, anime):
     scr.addstr(y, 0, title)
     scr.addstr(y, (x_max-len(ep_info)), ep_info)
 
-def getTitle(anime):
+def getTitle(anime, xdcc_info):
     global ID_MODE
     global DISP_KEY
     global SORT_KEY
+    a_id = str(anime['anime']['id'])
     if ID_MODE:
-        return str(anime['anime']['id']).strip()
+        return a_id
     else:
-        return anime['anime'][DISP_KEY].strip()
+        title = anime['anime'][DISP_KEY].strip()
+        if a_id in xdcc_info:
+            return XDCCTitle(anime, title, xdcc_info[a_id])
+        else:
+            return title
 
-def printList(scr, anime_watchings, selected, offset):
+def XDCCTitle(anime, title, pkgs):
+    ep_nums = [int(pkg['ep_num']) for pkg in pkgs]
+    if len(ep_nums) > 0:
+        ep_newest = max(ep_nums)
+    else:
+        ep_newest = 0
+    ep_seen = int(anime['episodes_watched'])
+    if ep_newest > ep_seen:
+        return title + ' *' + str(ep_newest-ep_seen)
+    elif ep_newest > 0:
+        return title + ' *'
+    else:
+        return title + ' \''
+
+def printList(scr, anime_watchings, selected, offset, xdcc_info):
     (y_max,x_max)=scr.getmaxyx()
     y=0
     while y+1<y_max and y+offset<len(anime_watchings):
         anime = anime_watchings[y+offset]
         if selected == y:
             scr.standout()
-            addListLine(scr, y, x_max, anime)
+            addListLine(scr, y, x_max, anime, xdcc_info)
             scr.standend()
         else:
-            addListLine(scr, y, x_max, anime)
+            addListLine(scr, y, x_max, anime, xdcc_info)
         y+=1
 
 def setListLanguage(anime_list_data):
@@ -215,7 +234,6 @@ def updateAnimeWatchings(anime_list_data):
 
 def main(stdscr):
     anime_watchings = updateAnimeWatchings(getAnimeList())
-
     xdcc_info = getXDCCInfo()
 
     curses.use_default_colors()
@@ -230,7 +248,7 @@ def main(stdscr):
 
     while c != 'q':
         stdscr.move(0,0)
-        printList(stdscr, anime_watchings, curs_y, offset)
+        printList(stdscr, anime_watchings, curs_y, offset, xdcc_info)
         c = stdscr.getkey()
         if c==NAV_U:
             if curs_y==0 and offset != 0:
