@@ -16,7 +16,6 @@ NAV_L       = 'h'
 NAV_R       = 'l'
 CLIENT_ID   = 'sirtetris-eky4q'
 CLIENT_SEC  = None
-AUTH_CODE   = None
 USER        = None
 REDIR_FOO   = 'http%3A%2F%2Fmoc.sirtetris.com%2Fanihilist%2Fechocode.php'
 DISP_KEY    = None
@@ -35,19 +34,18 @@ def setClientSecret():
         CLIENT_SEC = f.read().rstrip()
     f.close()
 
-def setAuthCode():
-    global AUTH_CODE
+def getAuthCode():
     print('You have to generate an auth code:\n'
           'http://moc.sirtetris.com/anihilist/echocode.php\n\n'
           'Paste it here, then continue with <ENTER>.')
-    AUTH_CODE = stdin.readline().strip()
+    return stdin.readline().strip()
 
 def setup():
     setUser()
     setClientSecret()
     if not os.path.exists('access_data.json'):
-        setAuthCode()
-        newAccessToken()
+        auth_code = getAuthCode()
+        newAccessToken(auth_code)
     else:
         getAccessToken() # may have to be refreshed
 
@@ -59,10 +57,10 @@ def callAPI(method, url, data=None):
     resp_data = json.loads(resp_json)
     return resp_data
 
-def newAccessToken():
+def newAccessToken(auth_code):
     url = ('/api/auth/access_token?grant_type=authorization_code'
            '&client_id={0}&client_secret={1}&redirect_uri={2}'
-           '&code={3}').format(CLIENT_ID,CLIENT_SEC,REDIR_FOO,AUTH_CODE)
+           '&code={3}').format(CLIENT_ID,CLIENT_SEC,REDIR_FOO,auth_code)
     access_data = callAPI('POST', url)
     with open('access_data.json', 'w') as f:
         f.write(json.dumps(access_data))
