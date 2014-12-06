@@ -26,6 +26,7 @@ usage
 * **h** -> decrease watched episodes count by one\*
 * **i** -> toggle ID layer
 * **s** -> toggle XDCC layer
+* **c** -> toggle raw XDCC lines
 * **q** -> quit
 
 \* planned, not yet implemented

@@ -22,6 +22,7 @@ REDIR_FOO   = 'http%3A%2F%2Fmoc.sirtetris.com%2Fanihilist%2Fechocode.php'
 DISP_KEY    = None
 SORT_KEY    = None
 ID_MODE     = False
+RAW_MODE    = False
 LIST_ANIME  = 0
 LIST_XDCC   = 1
 
@@ -133,9 +134,6 @@ def addListLine(scr, y, x_max, anime, xdcc_info):
     scr.addstr(y, (x_max-len(ep_info)), ep_info)
 
 def getTitle(anime, xdcc_info):
-    global ID_MODE
-    global DISP_KEY
-    global SORT_KEY
     a_id = str(anime['anime']['id'])
     if ID_MODE:
         return a_id
@@ -181,12 +179,18 @@ def printPkgList(scr, anime, selected, xdcc_info, offset):
     y=0
     while y+1<y_max and y+offset<len(pkgss):
         pkg = pkgss[y+offset]
+        if RAW_MODE:
+            line = pkg['line']
+        else:
+            line = '{0} -> [{1}] {2} {3}'.format(pkg['pkg_num'], pkg['group'],
+                            anime['anime'][DISP_KEY].strip(), pkg['ep_num'])
         if int(pkg['ep_num']) > ep_seen:
             scr.standout()
+        scr.addstr(y, 0, ' '*x_max)
         if selected == y:
-            scr.addstr(y, 0, '-' + pkg['line'])
+            scr.addstr(y, 0, '- ' + line)
         else:
-            scr.addstr(y, 0, ' ' + pkg['line'])
+            scr.addstr(y, 0, '  ' + line)
         y+=1
     scr.standend()
 
@@ -207,6 +211,10 @@ def setListLanguage(anime_list_data):
 def toggleIDs():
     global ID_MODE
     ID_MODE = not ID_MODE
+
+def toggleRAW():
+    global RAW_MODE
+    RAW_MODE = not RAW_MODE
 
 def getXDCCInfo():
     # xdcc.json file
@@ -239,6 +247,7 @@ def getXDCCInfo():
             pkg['line'] = m[0]
             pkg['pkg_num'] = m[1]
             pkg['ep_num'] = m[2]
+            pkg['group'] = entry['group']
             pkgs.append(pkg)
         xdcc_info[key] = pkgs
     return xdcc_info
@@ -313,6 +322,8 @@ def main(stdscr):
             #anime_watchings = updateAnimeWatchings(getAnimeList())
         if c=='i' and list_type==LIST_ANIME:
             toggleIDs()
+        if c=='c' and list_type==LIST_XDCC:
+            toggleRAW()
         if c=='s' and xdcc_key in xdcc_info:
             stdscr.clear()
             list_type = 1-list_type
