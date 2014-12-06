@@ -20,15 +20,26 @@ setup
 
 usage
 -----
-* **k** -> navigate up
-* **j** -> navigate down
-* **l** -> increase watched episodes count by one\*
-* **h** -> decrease watched episodes count by one\*
-* **i** -> toggle ID layer
-* **s** -> toggle XDCC layer
-* **c** -> toggle raw XDCC lines
-* **y** -> copy package number of current XDCC line to clipboard\*\*
-* **q** -> quit
+context    | key   | effect
+---------- | ----- | ------
+any list   | **k** | navigate up
+any list   | **j** | navigate down
+anime list | **l** | increase watched episodes count by one\*
+anime list | **h** | decrease watched episodes count by one\*
+anime list | **i** | toggle ID layer
+any list   | **s** | toggle XDCC layer
+xdcc list  | **c** | toggle raw XDCC lines
+xdcc list  | **y** | copy package number of current XDCC line to clipboard\*\*
+any list   | **q** | quit
+
+interface
+---------
+gui element      | meaning
+---------------- | -------
+`<title> '`      | entry in xdcc.json but no matches in retrieved packlist
+`<title> *`      | entry in xdcc.json, matches in retrieved packlis, no unwatched eps
+`<title> *<num>` | entry in xdcc.json, matches in retrieved packlis, `<num>` unwatched eps
 
 \* planned, not yet implemented
+
 \*\* requires xclip
