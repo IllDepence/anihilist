@@ -47,16 +47,22 @@ def setup():
         getAccessToken() # may have to be refreshed
 
 def callAPI(method, url, data=None):
+    import pprint
+    if(method=='PUT'):
+        with open('debug', 'w') as f:
+            #pprint.pprint(data, f)
+            f.write(data)
+        f.close()
     conn = http.client.HTTPSConnection('anilist.co', 443)
     conn.request(method=method, url=url, body=data)
     resp_obj = conn.getresponse()
     resp_json = resp_obj.read().decode('utf-8')
+    if(method=='PUT'):
+        with open('debug2', 'w') as f:
+            #pprint.pprint(resp_data, f)
+            f.write(resp_json)
+        f.close()
     resp_data = json.loads(resp_json)
-    #import pprint
-    #with open('debug', 'w') as f:
-    #    pprint.pprint(resp_data, f)
-    #    #f.write(data)
-    #f.close()
     return resp_data
 
 def newAccessToken(auth_code):
@@ -104,17 +110,8 @@ def updateWatchedCount(anime, delta):
     old = int(anime['episodes_watched'])
     new = old+delta
     a_id = int(anime['anime']['id'])
-    url = ('/api/animelist?access_token='
-           '{1}').format(USER, getAccessToken())
-    data = urllib.parse.urlencode({'id':a_id,
-                                   'list_status':'watching',
-                                   'score':6.5,
-                                   'episodes_watched':new,
-                                   'rewatched':anime['rewatched'],
-                                   'notes':anime['notes'],
-                                   'advanced_rating_scores':'',
-                                   'custom_lists':'',
-                                   'hidden_default':''})
+    url = ('/api/animelist?access_token={0}').format(getAccessToken())
+    data = urllib.parse.urlencode({'id':a_id, 'episodes_watched':new})
     return callAPI('PUT', url, data=data)
 
 def cursesShutdown():
@@ -325,9 +322,8 @@ def main(stdscr):
         if c==NAV_L:
             pass
         if c==NAV_R:
-            pass
-            #updateWatchedCount(anime_curs, 1)
-            #anime_watchings = updateAnimeWatchings(getAnimeList())
+            updateWatchedCount(anime_curs, 1)
+            anime_watchings = updateAnimeWatchings(getAnimeList())
         if c=='i' and list_type==LIST_ANIME:
             toggleIDs()
         if c=='c' and list_type==LIST_XDCC:
