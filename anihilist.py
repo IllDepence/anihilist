@@ -209,7 +209,7 @@ def setup():
     else:
         getAccessToken() # may have to be refreshed
 
-def callAPI(method, url, data=None):
+def callAPI(method, url, data=None, headers={}):
     import pprint
     if(method=='PUT'):
         with open('debug', 'w') as f:
@@ -217,7 +217,7 @@ def callAPI(method, url, data=None):
             f.write(data)
         f.close()
     conn = http.client.HTTPSConnection('anilist.co', 443)
-    conn.request(method=method, url=url, body=data)
+    conn.request(method=method, url=url, body=data, headers=headers)
     resp_obj = conn.getresponse()
     resp_json = resp_obj.read().decode('utf-8')
     if(method=='PUT'):
@@ -270,14 +270,14 @@ def getAnimeList():
     return callAPI('GET', url)
 
 def updateWatchedCount(anime, delta):
-    old = int(anime['episodes_watched'])
+    old = int(anime.ep_seen)
     new = old+delta
-    a_id = int(anime['anime']['id'])
-    #FIXME: accesstoken needs to be header
-    #(see: https://github.com/Josh-Star/AniList-API-Docs/issues/7)
-    url = ('/api/animelist?access_token={0}').format(getAccessToken())
+    a_id = int(anime.al_id)
+    url = '/api/animelist'
     data = urllib.parse.urlencode({'id':a_id, 'episodes_watched':new})
-    return callAPI('PUT', url, data=data)
+    headers = {}
+    headers['Authorization'] = 'bearer {0}'.format(getAccessToken())
+    return callAPI('PUT', url, data=data, headers=headers)
 
 def getXDCCInfo():
     # xdcc.json file
@@ -349,8 +349,9 @@ def main(stdscr):
         if c==NAV_L:
             pass
         if c==NAV_R:
+            pass
             #updateWatchedCount(anime_curs, 1)
-            anime_list = getUpdatedAnimeList()
+            #anime_list = getUpdatedAnimeList()
         if c=='i' and list_type==LIST_ANIME:
             anime_list.toggleIDMode()
         if c=='c' and list_type==LIST_XDCC:
