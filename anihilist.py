@@ -87,6 +87,8 @@ class List:
         self.end_screen = y_max-2
         self.x_max = x_max
         self.end_list = len(lisd)-1
+    def __len__(self):
+        return len(self.lisd)
     def _getOnScreen(self):
         start_idx = self.offset
         end_idx = min(self.end_screen, self.end_list) + self.offset
@@ -105,6 +107,8 @@ class List:
             self.offset += delta
         else:
             self.cursor += delta
+    def getUnderCursor(self):
+        return self.lisd[self.cursor + self.offset]
 
 class AnimeList(List):
     def __init__(self, anilist_data, list_key, xdcc_info):
@@ -123,8 +127,6 @@ class AnimeList(List):
         List.__init__(self, sortd)
     def toggleIDMode(self):
         self.id_mode = not self.id_mode
-    def getUnderCursor(self):
-        return self.lisd[self.cursor + self.offset]
     def setListKey(self, key):
         self.list_key = key
         self._updateEntries()
@@ -168,7 +170,7 @@ class PackageList(List):
     def toggleRawMode(self):
         self.raw_mode = not self.raw_mode
     def yankUnderCursor(self):
-        pkg = self.lisd[self.cursor + self.offset]
+        pkg = self.getUnderCursor()
         try:
             os.system('echo -n "{0}" | xclip'.format(pkg.pkg_num))
         except:
@@ -375,7 +377,7 @@ def main(stdscr):
             anime_curs.pkg_list.toggleRawMode()
         if c=='y' and list_type==LIST_XDCC:
             anime_curs.pkg_list.yankUnderCursor()
-        if c=='s' and not anime_curs.pkg_list is None:
+        if c=='s' and not anime_curs.pkg_list is None and len(anime_curs.pkg_list)>0:
             stdscr.clear()
             list_type = 1-list_type
 
