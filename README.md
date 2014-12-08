@@ -24,6 +24,7 @@ context    | key   | effect
 ---------- | ----- | ------
 any list   | **k** | navigate up
 any list   | **j** | navigate down
+anime list | **1-5** | show watching|completed|plan to watch|on hold|dropped list
 anime list | **l** | increase watched episodes count by one\*
 anime list | **h** | decrease watched episodes count by one\*
 anime list | **i** | toggle ID layer

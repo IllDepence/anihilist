@@ -110,18 +110,25 @@ class AnimeList(List):
     def __init__(self, anilist_data, list_key, xdcc_info):
         self.anilist_data = anilist_data
         self.list_key = list_key
+        self.xdcc_info = xdcc_info
         self.id_mode = False
         self._setListLanguage()
-        list_raw = anilist_data['lists'][list_key]
+        self._updateEntries()
+    def _updateEntries(self):
+        list_raw = self.anilist_data['lists'][self.list_key]
         list_processed = []
         for al_data in list_raw:
-            list_processed.append(Anime(al_data, xdcc_info, self))
+            list_processed.append(Anime(al_data, self.xdcc_info, self))
         sortd = sorted(list_processed, key=lambda k: k.title[self.sort_key])
         List.__init__(self, sortd)
     def toggleIDMode(self):
         self.id_mode = not self.id_mode
     def getUnderCursor(self):
         return self.lisd[self.cursor + self.offset]
+    def setListKey(self, key):
+        self.list_key = key
+        self._updateEntries()
+        self.scr.clear()
     def display(self):
         sub_list = self._getOnScreen()
         y = 0
@@ -324,7 +331,7 @@ def main(stdscr):
     stdscr.clear()
 
     c=None
-    list_type=0
+    list_type=LIST_ANIME
 
     while c != 'q':
         stdscr.move(0,0)
@@ -352,6 +359,16 @@ def main(stdscr):
             pass
             #updateWatchedCount(anime_curs, 1)
             #anime_list = getUpdatedAnimeList()
+        if c=='1' and list_type==LIST_ANIME:
+            anime_list.setListKey('watching')
+        if c=='2' and list_type==LIST_ANIME:
+            anime_list.setListKey('completed')
+        if c=='3' and list_type==LIST_ANIME:
+            anime_list.setListKey('plan_to_watch')
+        if c=='4' and list_type==LIST_ANIME:
+            anime_list.setListKey('on_hold')
+        if c=='5' and list_type==LIST_ANIME:
+            anime_list.setListKey('dropped')
         if c=='i' and list_type==LIST_ANIME:
             anime_list.toggleIDMode()
         if c=='c' and list_type==LIST_XDCC:
