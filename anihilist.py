@@ -138,6 +138,8 @@ class AnimeList(List):
     def setListKey(self, key):
         self.list_key = key
         self._updateEntries()
+        self.cursor = 0
+        self.offset = 0
         self.scr.clear()
     def toggleIDMode(self):
         self.id_mode = not self.id_mode
