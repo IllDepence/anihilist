@@ -7,7 +7,7 @@ a ncurses client for anilist.co
 features
 --------
 * display anilist.co anime lists
-* change number of watched episodes<sup>[1]</sup>
+* change number of watched episodes
 * integration of xdcc lists
 
 setup
@@ -28,10 +28,12 @@ any list   | **q** | quit
 anime list | **1-5** | show watching&#124;completed&#124;plan to watch&#124;on hold&#124;dropped list
 anime list | **i** | toggle ID layer
 xdcc list  | **c** | toggle raw XDCC lines
-xdcc list  | **y** | copy package number of current XDCC line to clipboard<sup>[2]</sup>
-any anime  | **l** | increase watched episodes count by one<sup>[1]</sup>
-any anime  | **h** | decrease watched episodes count by one<sup>[1]</sup>
+xdcc list  | **y** | copy package number of current XDCC line to clipboard<sup>[1]</sup>
+any anime  | **l** | increase watched episodes count by one
+any anime  | **h** | decrease watched episodes count by one
 anime \*   | **s** | toggle XDCC layer
+
+[1] requires [xclip](http://linux.die.net/man/1/xclip)
 
 interface
 ---------
@@ -45,8 +47,7 @@ xdcc integration
 ----------------
 look at the file `xdcc.json`, it's pretty self explanatory. for each anime fill in a url to a packlist, a title and group to search for and the anilist id (that's what the ID layer is good for).
 
----
-
-[1] planned, not yet implemented
-
-[2] requires xclip
+planned features
+----------------
+* moving anime to other lists
+* change rating of anime

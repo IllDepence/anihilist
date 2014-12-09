@@ -87,6 +87,9 @@ class List:
         self.end_screen = y_max-2
         self.x_max = x_max
         self.end_list = len(lisd)-1
+    def setList(self, lisd):
+        self.lisd = lisd
+        self.end_list = len(lisd)-1
     def __len__(self):
         return len(self.lisd)
     def _getOnScreen(self):
@@ -117,20 +120,27 @@ class AnimeList(List):
         self.xdcc_info = xdcc_info
         self.id_mode = False
         self._setListLanguage()
+        self._updateEntries(init=True)
+    def updateEntries(self, anilist_data):
+        self.anilist_data = anilist_data
         self._updateEntries()
-    def _updateEntries(self):
+        self.scr.clear()
+    def _updateEntries(self, init=False):
         list_raw = self.anilist_data['lists'][self.list_key]
         list_processed = []
         for al_data in list_raw:
             list_processed.append(Anime(al_data, self.xdcc_info, self))
         sortd = sorted(list_processed, key=lambda k: k.title[self.sort_key])
-        List.__init__(self, sortd)
-    def toggleIDMode(self):
-        self.id_mode = not self.id_mode
+        if init:
+            List.__init__(self, sortd)
+        else:
+            self.setList(sortd)
     def setListKey(self, key):
         self.list_key = key
         self._updateEntries()
         self.scr.clear()
+    def toggleIDMode(self):
+        self.id_mode = not self.id_mode
     def display(self):
         sub_list = self._getOnScreen()
         y = 0
@@ -219,21 +229,10 @@ def setup():
         getAccessToken() # may have to be refreshed
 
 def callAPI(method, url, data=None, headers={}):
-    import pprint
-    if(method=='PUT'):
-        with open('debug', 'w') as f:
-            #pprint.pprint(data, f)
-            f.write(data)
-        f.close()
     conn = http.client.HTTPSConnection('anilist.co', 443)
     conn.request(method=method, url=url, body=data, headers=headers)
     resp_obj = conn.getresponse()
     resp_json = resp_obj.read().decode('utf-8')
-    if(method=='PUT'):
-        with open('debug2', 'w') as f:
-            #pprint.pprint(resp_data, f)
-            f.write(resp_json)
-        f.close()
     resp_data = json.loads(resp_json)
     return resp_data
 
@@ -273,7 +272,7 @@ def refreshAccessToken(refresh_token):
     f.close()
     return access_data['access_token']
 
-def getAnimeList():
+def getAnilistData():
     url = ('/api/user/{0}/animelist?access_token='
            '{1}').format(USER, getAccessToken())
     return callAPI('GET', url)
@@ -285,7 +284,8 @@ def updateWatchedCount(anime, delta):
     url = '/api/animelist'
     data = urllib.parse.urlencode({'id':a_id, 'episodes_watched':new})
     headers = {}
-    headers['Authorization'] = 'bearer {0}'.format(getAccessToken())
+    headers['Authorization'] = 'Bearer {0}'.format(getAccessToken())
+    headers['Content-Type'] = 'application/x-www-form-urlencoded'
     return callAPI('PUT', url, data=data, headers=headers)
 
 def getXDCCInfo():
@@ -320,7 +320,7 @@ def getXDCCInfo():
     return xdcc_info
 
 def getUpdatedAnimeList():
-    anilist_data = getAnimeList()
+    anilist_data = getAnilistData()
     xdcc_info = getXDCCInfo()
     return AnimeList(anilist_data, 'watching', xdcc_info)
 
@@ -356,11 +356,11 @@ def main(stdscr):
             if list_type == LIST_XDCC:
                 anime_curs.pkg_list.scroll(DOWN)
         if c==NAV_L:
-            pass
+            updateWatchedCount(anime_curs, -1)
+            anime_list.updateEntries(anilist_data=getAnilistData())
         if c==NAV_R:
-            pass
-            #updateWatchedCount(anime_curs, 1)
-            #anime_list = getUpdatedAnimeList()
+            updateWatchedCount(anime_curs, 1)
+            anime_list.updateEntries(anilist_data=getAnilistData())
         if c=='1' and list_type==LIST_ANIME:
             anime_list.setListKey('watching')
         if c=='2' and list_type==LIST_ANIME:
