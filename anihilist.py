@@ -21,6 +21,7 @@ USER        = None
 REDIR_FOO   = 'http%3A%2F%2Fmoc.sirtetris.com%2Fanihilist%2Fechocode.php'
 LIST_ANIME  = 0
 LIST_XDCC   = 1
+LIST_SEARCH = 2
 UP          = -1
 DOWN        = 1
 
@@ -112,6 +113,19 @@ class List:
             self.cursor += delta
     def getUnderCursor(self):
         return self.lisd[self.cursor + self.offset]
+
+class SearchResults(List):
+    def __init__(self, lisd, anilist_data):
+        self.title_key = 'title_' + anilist_data['title_language']
+        List.__init__(self, lisd)
+    def display(self):
+        sub_list = self._getOnScreen()
+        y = 0
+        for anime in sub_list:
+            if self.cursor == y: self.scr.standout()
+            self.scr.addstr(y, 0, anime[self.title_key])
+            if self.cursor == y: self.scr.standend()
+            y+=1
 
 class AnimeList(List):
     def __init__(self, anilist_data, list_key, xdcc_info):
@@ -287,12 +301,12 @@ def updateWatchedCount(anime, delta):
     changeAnime(anime, payload)
 
 def moveToList(anime):
-    stdscr = TheScreen.get()
+    scr = TheScreen.get()
     lisd = anime.parent
-    stdscr.standout()
-    stdscr.addstr(lisd.cursor, (lisd.x_max-11), '[w|c|p|h|d]')
-    stdscr.standend()
-    c = stdscr.getkey()
+    scr.standout()
+    scr.addstr(lisd.cursor, (lisd.x_max-11), '[w|c|p|h|d]')
+    scr.standend()
+    c = scr.getkey()
     mapping = {'w':'watching',
                'c':'completed',
                'h':'on-hold',
@@ -311,6 +325,33 @@ def changeAnime(anime, payload):
     headers['Authorization'] = 'Bearer {0}'.format(getAccessToken())
     headers['Content-Type'] = 'application/x-www-form-urlencoded'
     return callAPI('PUT', url, data=payload, headers=headers)
+
+def searchAnime(lisd):
+    scr = TheScreen.get()
+    scr.addstr(0, 0, 'search: ')
+    x = 8
+    query = ''
+    c = None
+    while not c in ['KEY_ENTER', '\n', '\r']:
+        c = scr.getkey()
+        if c in ['KEY_BACKSPACE', '\u0008']:
+            query = query[0:-1]
+            x = max(x-1, 8)
+            scr.addstr(0, x, ' ')
+        else:
+            scr.addstr(0, x, c)
+            query += c
+            x += 1
+    if len(query) < 3:
+        return
+    else:
+        scr.clear()
+        lisd.setList(getSearchResults(query.strip()))
+
+def getSearchResults(query):
+    url = ('/api/anime/search/{0}?access_token='
+           '{1}').format(query, getAccessToken())
+    return callAPI('GET', url)
 
 def getXDCCInfo():
     # xdcc.json file
@@ -350,7 +391,10 @@ def getUpdatedAnimeList():
 
 def main(stdscr):
     TheScreen.set(stdscr)
-    anime_list = getUpdatedAnimeList()
+    anilist_data = getAnilistData()
+    xdcc_info = getXDCCInfo()
+    anime_list = AnimeList(anilist_data, 'watching', xdcc_info)
+    search_results = SearchResults([], anilist_data)
 
     curses.use_default_colors()
     curses.curs_set(0)
@@ -367,6 +411,8 @@ def main(stdscr):
             anime_list.display()
         elif list_type==LIST_XDCC:
             anime_curs.pkg_list.display()
+        elif list_type==LIST_SEARCH:
+            search_results.display()
 
         c = stdscr.getkey()
         if c==NAV_U:
@@ -374,11 +420,15 @@ def main(stdscr):
                 anime_list.scroll(UP)
             if list_type == LIST_XDCC:
                 anime_curs.pkg_list.scroll(UP)
+            if list_type == LIST_SEARCH:
+                search_results.scroll(UP)
         if c==NAV_D:
             if list_type == LIST_ANIME:
                 anime_list.scroll(DOWN)
             if list_type == LIST_XDCC:
                 anime_curs.pkg_list.scroll(DOWN)
+            if list_type == LIST_SEARCH:
+                search_results.scroll(DOWN)
         if c==NAV_L:
             updateWatchedCount(anime_curs, -1)
             anime_list.updateEntries(anilist_data=getAnilistData())
@@ -404,9 +454,25 @@ def main(stdscr):
             anime_curs.pkg_list.toggleRawMode()
         if c=='y' and list_type==LIST_XDCC:
             anime_curs.pkg_list.yankUnderCursor()
-        if c=='s' and not anime_curs.pkg_list is None and len(anime_curs.pkg_list)>0:
+        if c=='s' and not anime_curs.pkg_list is None\
+            and len(anime_curs.pkg_list)>0:
+            if list_type == LIST_ANIME:
+                list_type = LIST_XDCC
+            elif list_type == LIST_XDCC:
+                list_type = LIST_ANIME
+            else:
+                continue
             stdscr.clear()
-            list_type = 1-list_type
+        if c=='f':
+            if list_type == LIST_ANIME:
+                stdscr.clear()
+                list_type = LIST_SEARCH
+                searchAnime(search_results)
+            elif list_type == LIST_SEARCH:
+                stdscr.clear()
+                list_type = LIST_ANIME
+            else:
+                continue
 
 if __name__ == '__main__':
     setup()
