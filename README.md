@@ -29,9 +29,12 @@ anime list | **1-5** | show watching&#124;completed&#124;plan to watch&#124;on h
 anime list | **i** | toggle ID layer
 xdcc list  | **c** | toggle raw XDCC lines
 xdcc list  | **y** | copy package number of current XDCC line to clipboard<sup>[1]</sup>
+anime \*   | **s** | toggle XDCC layer
 any anime  | **l** | increase watched episodes count by one
 any anime  | **h** | decrease watched episodes count by one
-anime \*   | **s** | toggle XDCC layer
+any anime  | **m** | enter move mode
+move mode  | **w&#124;c&#124;p&#124;h&#124;d** | move anime to watching&#124;completed&#124;plan to watch&#124;on hold&#124;dropped list
+move mode  | **[^wcphd]** | leave move mode
 
 [1] requires [xclip](http://linux.die.net/man/1/xclip)
 
@@ -39,9 +42,10 @@ interface
 ---------
 gui element      | meaning
 ---------------- | -------
-`<title> '`      | entry in xdcc.json but no matches in retrieved packlist
-`<title> *`      | entry in xdcc.json, matches in retrieved packlis, no unwatched eps
-`<title> *<num>` | entry in xdcc.json, matches in retrieved packlis, `<num>` unwatched eps
+`^<title> '`     | entry in xdcc.json but no matches in retrieved packlist
+`^<title> *`     | entry in xdcc.json, matches in retrieved packlis, no unwatched eps
+`^<title> *<num>`| entry in xdcc.json, matches in retrieved packlis, `<num>` unwatched eps
+`[w|c|p|h|d]$`   | anime under cursor is in move mode
 
 xdcc integration
 ----------------
@@ -49,5 +53,5 @@ look at the file `xdcc.json`, it's pretty self explanatory. for each anime fill 
 
 planned features
 ----------------
-* moving anime to other lists
 * change rating of anime
+* anime search (for adding stuff to plan to watch / watching)

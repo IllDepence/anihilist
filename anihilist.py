@@ -283,12 +283,34 @@ def updateWatchedCount(anime, delta):
     old = int(anime.ep_seen)
     new = old+delta
     a_id = int(anime.al_id)
+    payload = urllib.parse.urlencode({'id':a_id, 'episodes_watched':new})
+    changeAnime(anime, payload)
+
+def moveToList(anime):
+    stdscr = TheScreen.get()
+    lisd = anime.parent
+    stdscr.standout()
+    stdscr.addstr(lisd.cursor, (lisd.x_max-11), '[w|c|p|h|d]')
+    stdscr.standend()
+    c = stdscr.getkey()
+    mapping = {'w':'watching',
+               'c':'completed',
+               'h':'on-hold',
+               'd':'dropped',
+               'p':'plan to watch'}
+    if c not in mapping:
+        return False
+    a_id = int(anime.al_id)
+    payload = urllib.parse.urlencode({'id':a_id, 'list_status':mapping[c]})
+    changeAnime(anime, payload)
+    return True
+
+def changeAnime(anime, payload):
     url = '/api/animelist'
-    data = urllib.parse.urlencode({'id':a_id, 'episodes_watched':new})
     headers = {}
     headers['Authorization'] = 'Bearer {0}'.format(getAccessToken())
     headers['Content-Type'] = 'application/x-www-form-urlencoded'
-    return callAPI('PUT', url, data=data, headers=headers)
+    return callAPI('PUT', url, data=payload, headers=headers)
 
 def getXDCCInfo():
     # xdcc.json file
@@ -363,6 +385,9 @@ def main(stdscr):
         if c==NAV_R:
             updateWatchedCount(anime_curs, 1)
             anime_list.updateEntries(anilist_data=getAnilistData())
+        if c=='m':
+            if moveToList(anime_curs):
+                anime_list.updateEntries(anilist_data=getAnilistData())
         if c=='1' and list_type==LIST_ANIME:
             anime_list.setListKey('watching')
         if c=='2' and list_type==LIST_ANIME:
