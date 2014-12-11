@@ -58,4 +58,5 @@ look at the file `xdcc.json`, it's pretty self explanatory. for each anime fill 
 planned features
 ----------------
 * change rating of anime
+* remove anime
 * make anime search compatible with japanese input

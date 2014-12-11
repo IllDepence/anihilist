@@ -86,14 +86,16 @@ class Package():
 
 class List:
     def __init__(self, lisd):
-        self.scr = TheScreen.get()
         self.lisd = lisd
         self.cursor = 0
         self.offset = 0
+        self.end_list = len(lisd)-1
+        self.screenInit()
+    def screenInit(self):
+        self.scr = TheScreen.get()
         (y_max,x_max) = self.scr.getmaxyx()
         self.end_screen = y_max-2
         self.x_max = x_max
-        self.end_list = len(lisd)-1
     def setList(self, lisd):
         self.lisd = lisd
         self.end_list = len(lisd)-1
@@ -419,6 +421,12 @@ def main(stdscr):
             search_results.display()
 
         c = stdscr.getkey()
+        if c=='KEY_RESIZE':
+            anime_list.screenInit()
+            for anime in anime_list.lisd:
+                if not anime.pkg_list==None:
+                    anime.pkg_list.screenInit()
+            search_results.screenInit()
         if c==NAV_U:
             if list_type == LIST_ANIME:
                 anime_list.scroll(UP)
