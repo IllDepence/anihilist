@@ -24,6 +24,8 @@ LIST_XDCC   = 1
 LIST_SEARCH = 2
 UP          = -1
 DOWN        = 1
+ANIME_NEW   = 'POST'
+ANIME_MOVE  = 'PUT'
 
 class TheScreen:
     def set(src):
@@ -33,29 +35,33 @@ class TheScreen:
 
 class Anime:
     def __init__(self, al_data, xdcc_info, parent):
-        self.al_id = str(al_data['anime']['id'])
-        self.parent = parent
-        self.title = {}
-        self.title['ja'] = al_data['anime']['title_japanese'].strip()
-        self.title['en'] = al_data['anime']['title_english'].strip()
-        self.title['ro'] = al_data['anime']['title_romaji'].strip()
-        ep_total = al_data['anime']['total_episodes']
-        if ep_total > 0:
-            self.ep_total = str(ep_total)
-        else:
-            self.ep_total = '?'
-        self.ep_seen = str(al_data['episodes_watched'])
-        self.pkg_list = None
-        if self.al_id in xdcc_info:
-            pkg_list_raw = xdcc_info[self.al_id]
-            pkg_list_arg = []
-            for pkg in pkg_list_raw:
-                pkg.seen = (int(pkg.ep_num) <= int(self.ep_seen))
-                pkg_list_arg.append(pkg)
-            self.pkg_list = PackageList(pkg_list_arg, self)
-            self._set_xdcc_cue(pkg_list_raw)
-        else:
-            self.xdcc_cue = ''
+        if xdcc_info is None:       # used temporarily for search results
+            self.al_id = al_data
+            self.parent = parent
+        else:                       # normal use for on list anime
+            self.al_id = str(al_data['anime']['id'])
+            self.parent = parent
+            self.title = {}
+            self.title['ja'] = al_data['anime']['title_japanese'].strip()
+            self.title['en'] = al_data['anime']['title_english'].strip()
+            self.title['ro'] = al_data['anime']['title_romaji'].strip()
+            ep_total = al_data['anime']['total_episodes']
+            if ep_total > 0:
+                self.ep_total = str(ep_total)
+            else:
+                self.ep_total = '?'
+            self.ep_seen = str(al_data['episodes_watched'])
+            self.pkg_list = None
+            if self.al_id in xdcc_info:
+                pkg_list_raw = xdcc_info[self.al_id]
+                pkg_list_arg = []
+                for pkg in pkg_list_raw:
+                    pkg.seen = (int(pkg.ep_num) <= int(self.ep_seen))
+                    pkg_list_arg.append(pkg)
+                self.pkg_list = PackageList(pkg_list_arg, self)
+                self._set_xdcc_cue(pkg_list_raw)
+            else:
+                self.xdcc_cue = ''
     def _set_xdcc_cue(self, pkg_list_raw):
         ep_nums = [int(pkg.ep_num) for pkg in pkg_list_raw]
         if len(ep_nums) > 0:
@@ -149,6 +155,9 @@ class AnimeList(List):
             List.__init__(self, sortd)
         else:
             self.setList(sortd)
+    def updateXDCCInfo(self, xdcc_info):
+        self.xdcc_info = xdcc_info
+        self._updateEntries()
     def setListKey(self, key):
         self.list_key = key
         self._updateEntries()
@@ -298,9 +307,9 @@ def updateWatchedCount(anime, delta):
     new = old+delta
     a_id = int(anime.al_id)
     payload = urllib.parse.urlencode({'id':a_id, 'episodes_watched':new})
-    changeAnime(anime, payload)
+    changeAnime(anime, payload, 'PUT')
 
-def moveToList(anime):
+def moveToList(anime, method):
     scr = TheScreen.get()
     lisd = anime.parent
     scr.standout()
@@ -316,15 +325,15 @@ def moveToList(anime):
         return False
     a_id = int(anime.al_id)
     payload = urllib.parse.urlencode({'id':a_id, 'list_status':mapping[c]})
-    changeAnime(anime, payload)
+    changeAnime(anime, payload, method)
     return True
 
-def changeAnime(anime, payload):
+def changeAnime(anime, payload, method):
     url = '/api/animelist'
     headers = {}
     headers['Authorization'] = 'Bearer {0}'.format(getAccessToken())
     headers['Content-Type'] = 'application/x-www-form-urlencoded'
-    return callAPI('PUT', url, data=payload, headers=headers)
+    return callAPI(method, url, data=payload, headers=headers)
 
 def searchAnime(lisd):
     scr = TheScreen.get()
@@ -384,11 +393,6 @@ def getXDCCInfo():
         xdcc_info[key] = pkgs
     return xdcc_info
 
-def getUpdatedAnimeList():
-    anilist_data = getAnilistData()
-    xdcc_info = getXDCCInfo()
-    return AnimeList(anilist_data, 'watching', xdcc_info)
-
 def main(stdscr):
     TheScreen.set(stdscr)
     anilist_data = getAnilistData()
@@ -436,8 +440,14 @@ def main(stdscr):
             updateWatchedCount(anime_curs, 1)
             anime_list.updateEntries(anilist_data=getAnilistData())
         if c=='m':
-            if moveToList(anime_curs):
-                anime_list.updateEntries(anilist_data=getAnilistData())
+            if list_type==LIST_ANIME:
+                if moveToList(anime_curs, ANIME_MOVE):
+                    anime_list.updateEntries(anilist_data=getAnilistData())
+            elif list_type==LIST_SEARCH:
+                anime_raw = search_results.getUnderCursor()
+                anime = Anime(anime_raw['id'], None, search_results)
+                if moveToList(anime, ANIME_NEW):
+                    anime_list.updateEntries(anilist_data=getAnilistData())
         if c=='1' and list_type==LIST_ANIME:
             anime_list.setListKey('watching')
         if c=='2' and list_type==LIST_ANIME:
@@ -454,21 +464,24 @@ def main(stdscr):
             anime_curs.pkg_list.toggleRawMode()
         if c=='y' and list_type==LIST_XDCC:
             anime_curs.pkg_list.yankUnderCursor()
+        if c=='r' and list_type==LIST_ANIME:
+            xdcc_info = getXDCCInfo()
+            anime_list.updateXDCCInfo(xdcc_info)
         if c=='s' and not anime_curs.pkg_list is None\
             and len(anime_curs.pkg_list)>0:
-            if list_type == LIST_ANIME:
+            if list_type==LIST_ANIME:
                 list_type = LIST_XDCC
-            elif list_type == LIST_XDCC:
+            elif list_type==LIST_XDCC:
                 list_type = LIST_ANIME
             else:
                 continue
             stdscr.clear()
-        if c=='f':
-            if list_type == LIST_ANIME:
+        if c=='/':
+            if list_type==LIST_ANIME:
                 stdscr.clear()
                 list_type = LIST_SEARCH
                 searchAnime(search_results)
-            elif list_type == LIST_SEARCH:
+            elif list_type==LIST_SEARCH:
                 stdscr.clear()
                 list_type = LIST_ANIME
             else:
