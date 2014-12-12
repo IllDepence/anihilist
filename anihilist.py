@@ -134,6 +134,8 @@ class SearchResults(List):
             self.scr.addstr(y, 0, anime[self.title_key])
             if self.cursor == y: self.scr.standend()
             y+=1
+        if y==0:
+            self.scr.addstr(y, 0, 'no search results')
 
 class AnimeList(List):
     def __init__(self, anilist_data, list_key, xdcc_info):
@@ -257,6 +259,7 @@ def setup():
 
 def callAPI(method, url, data=None, headers={}):
     conn = http.client.HTTPSConnection('anilist.co', 443)
+    url = urllib.parse.quote(url,safe='/?=&')
     conn.request(method=method, url=url, body=data, headers=headers)
     resp_obj = conn.getresponse()
     resp_json = resp_obj.read().decode('utf-8')
@@ -340,20 +343,17 @@ def changeAnime(anime, payload, method):
 def searchAnime(lisd):
     scr = TheScreen.get()
     scr.addstr(0, 0, 'search: ')
-    x = 8
     query = ''
     c = None
-    while not c in ['KEY_ENTER', '\n', '\r']:
-        c = scr.getkey()
-        if c in ['KEY_BACKSPACE', '\u0008']:
+    while not c in [curses.KEY_ENTER, '\n', '\r']:
+        c = scr.get_wch()
+        if c in [curses.KEY_BACKSPACE, '\u0008']:
             query = query[0:-1]
-            x = max(x-1, 8)
-            scr.addstr(0, x, ' ')
         else:
-            scr.addstr(0, x, c)
             query += c
-            x += 1
-    if len(query) < 3:
+        scr.addstr(0, 8, query + ' '*(lisd.x_max-8-len(query)))
+    if len(query.strip()) < 3:
+        scr.addstr(1, 0, 'query too short.\nexit search mode with /')
         return
     else:
         scr.clear()
