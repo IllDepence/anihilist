@@ -51,6 +51,7 @@ class Anime:
             else:
                 self.ep_total = '?'
             self.ep_seen = str(al_data['episodes_watched'])
+            if self.ep_seen=='None': self.ep_seen = '0'
             self.pkg_list = None
             if self.al_id in xdcc_info:
                 pkg_list_raw = xdcc_info[self.al_id]
@@ -352,7 +353,7 @@ def searchAnime(lisd):
         else:
             query += c
         scr.addstr(0, 8, query + ' '*(lisd.x_max-8-len(query)))
-    if len(query.strip()) < 3:
+    if len(query.strip()) < 1:
         scr.addstr(1, 0, 'query too short.\nexit search mode with /')
         return
     else:
@@ -427,6 +428,7 @@ def main(stdscr):
                 if not anime.pkg_list==None:
                     anime.pkg_list.screenInit()
             search_results.screenInit()
+            stdscr.clear() # to prevent "residual" bottom lines
         if c==NAV_U:
             if list_type == LIST_ANIME:
                 anime_list.scroll(UP)
