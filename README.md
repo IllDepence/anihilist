@@ -59,4 +59,3 @@ planned features
 ----------------
 * change rating of anime
 * remove anime
-* make anime search compatible with japanese input

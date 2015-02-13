@@ -46,7 +46,7 @@ class Anime:
             self.title['en'] = al_data['anime']['title_english'].strip()
             self.title['ro'] = al_data['anime']['title_romaji'].strip()
             ep_total = al_data['anime']['total_episodes']
-            if ep_total > 0:
+            if not ep_total is None and ep_total > 0:
                 self.ep_total = str(ep_total)
             else:
                 self.ep_total = '?'
@@ -151,6 +151,18 @@ class AnimeList(List):
         self._updateEntries()
         self.scr.clear()
     def _updateEntries(self, init=False):
+        if len(self.anilist_data['lists']) == 0 or \
+           self.list_key not in self.anilist_data['lists']:
+            dummy = Anime(None, None, self)
+            dummy.title = {}
+            dummy.title['ja'] = '今まで何も記録されなかった'
+            dummy.title['en'] = 'no entries'
+            dummy.title['ro'] = 'no entries'
+            dummy.xdcc_cue = ''
+            dummy.ep_seen = '0'
+            dummy.ep_total = '0'
+            List.__init__(self, [dummy])
+            return
         list_raw = self.anilist_data['lists'][self.list_key]
         list_processed = []
         for al_data in list_raw:
