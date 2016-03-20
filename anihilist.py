@@ -155,7 +155,7 @@ class AnimeList(List):
            self.list_key not in self.anilist_data['lists']:
             dummy = Anime(None, None, self)
             dummy.title = {}
-            dummy.title['ja'] = '今まで何も記録されなかった'
+            dummy.title['ja'] = '空リスト'
             dummy.title['en'] = 'no entries'
             dummy.title['ro'] = 'no entries'
             dummy.xdcc_cue = ''
@@ -276,7 +276,10 @@ def callAPI(method, url, data=None, headers={}):
     conn.request(method=method, url=url, body=data, headers=headers)
     resp_obj = conn.getresponse()
     resp_json = resp_obj.read().decode('utf-8')
-    resp_data = json.loads(resp_json)
+    try:
+        resp_data = json.loads(resp_json)
+    except ValueError:
+        return False
     return resp_data
 
 def newAccessToken(auth_code):
@@ -344,6 +347,11 @@ def moveToList(anime, method):
     a_id = int(anime.al_id)
     payload = urllib.parse.urlencode({'id':a_id, 'list_status':mapping[c]})
     changeAnime(anime, payload, method)
+
+    if not isinstance(lisd, SearchResults):
+        if (lisd.end_list == lisd.cursor and    # moving bottommost item
+            not lisd.list_key == mapping[c]):   # !moving to current list
+            lisd.cursor = lisd.cursor - 1
     return True
 
 def changeAnime(anime, payload, method):
@@ -370,7 +378,11 @@ def searchAnime(lisd):
         return
     else:
         scr.clear()
-        lisd.setList(getSearchResults(query.strip()))
+        result = getSearchResults(query.strip())
+        if result is False:
+            lisd.setList([])
+        else:
+            lisd.setList(result)
 
 def getSearchResults(query):
     url = ('/api/anime/search/{0}?access_token='
