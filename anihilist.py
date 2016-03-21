@@ -78,9 +78,10 @@ class Anime:
             self.xdcc_cue = '\''
 
 class Package():
-    def __init__(self, ep_num, pkg_num, group, line, seen):
+    def __init__(self, ep_num, pkg_num, bot, group, line, seen):
         self.ep_num = ep_num
         self.pkg_num = pkg_num
+        self.bot = bot
         self.group = group
         self.line = line
         self.seen = seen
@@ -223,8 +224,9 @@ class PackageList(List):
         self.raw_mode = not self.raw_mode
     def yankUnderCursor(self):
         pkg = self.getUnderCursor()
+        msg = '/msg {0} xdcc send {1}'.format(pkg.bot, pkg.pkg_num)
         try:
-            os.system('echo -n "{0}" | xclip'.format(pkg.pkg_num))
+            os.system('echo -n "{0}" | xclip'.format(msg))
         except:
             pass
     def display(self):
@@ -238,8 +240,8 @@ class PackageList(List):
                 line = pkg.line
             else:
                 title = anime.title[anime_list.title_key]
-                line = '{0} -> [{1}] {2} {3}'.format(pkg.pkg_num, pkg.group,
-                                title, pkg.ep_num)
+                line = '{0} #{1} -> [{2}] {3} {4}'.format(pkg.bot, pkg.pkg_num,
+                                                pkg.group, title, pkg.ep_num)
             if int(pkg.ep_num) > int(anime.ep_seen):
                 self.scr.standout()
             self.scr.addstr(y, 0, ' '*self.x_max)
@@ -390,33 +392,80 @@ def getSearchResults(query):
     return callAPI('GET', url)
 
 def getXDCCInfo():
-    # xdcc.json file
     with open('xdcc.json', 'r') as f:
         xdcc_json = f.read().rstrip()
     f.close()
     xdcc_local_data = json.loads(xdcc_json)
+
+    # load only from active sources
     urls = []
-    # get packlist data
-    for entry in xdcc_local_data:
-        if not entry['url'] in urls:
+    for entry in xdcc_local_data['sources']:
+        if int(entry['active']) == 1:
             urls.append(entry['url'])
-    xdcc_lists = {}
+
+    # prepare group information
+    groups = []
+    for entry in xdcc_local_data['anime']:
+        if not entry['group'] in groups:
+            groups.append(entry['group'])
+
+    # prepare title information
+    titles = []
+    for entry in xdcc_local_data['anime']:
+        if not entry['packlist_title'] in titles:
+            titles.append(entry['packlist_title'])
+
+    # access sources
+    xdcc_packages = []
     for url in urls:
-        xdcc_lists[url] = str(urllib.request.urlopen(url).read(), 'utf-8')
+        host = url.split('/', 1)[0]
+        path = '/{0}'.format(url.split('/', 1)[1])
+
+        headers = {}
+        headers['User-Agent'] = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
+
+        conn = http.client.HTTPSConnection(host)
+        url = urllib.parse.quote(path)
+        conn.request(method='GET', url=url, headers=headers)
+        resp_obj = conn.getresponse()
+        resp_str = resp_obj.read().decode('utf-8')
+
+        resp_lines = resp_str.splitlines()
+        for line in resp_lines:
+            almost_json = "{{{0}".format(line.split('{', 1)[1])
+            almost_json = almost_json.replace('{b:"' ,'{"b":"' )
+            almost_json = almost_json.replace('", n:','", "n":')
+            almost_json = almost_json.replace(', s:' ,', "s":' )
+            almost_json = almost_json.replace(', f:"',', "f":"')
+            line_json = json.loads(almost_json[0:-1])
+            # only gather relevant packages
+            relevant = 0
+            for group in groups:
+                if group in line_json['f']:
+                    relevant = relevant + 1
+            for title in titles:
+                if title in line_json['f']:
+                    relevant = relevant + 1
+            if relevant == 2:
+                xdcc_packages.append(line_json)
     # build xdcc info package
     xdcc_info = {}
-    for entry in xdcc_local_data:
+    for entry in xdcc_local_data['anime']:
         key = entry['al_id']
         group = entry['group']
         title = entry['packlist_title']
-        patt = re.compile('^#(([0-9]+).+?\[{0}].+?{1}'       # pack num & title
-                          '[^\[\(0-9]+?'                     # not [ ( 0-9
-                          '([0-9]+).*$)'.format(group, title), re.M) # ep num
-        xdcc_text = xdcc_lists[entry['url']]
-        matches = re.findall(patt, xdcc_text)
+        patt = re.compile('^\[{0}].+?{1}'               # [group] title
+                          '[^\[\(0-9]+?'                # not [ ( 0-9
+                          '([0-9]+).*$'.format(group, title), re.M) # ep num
         pkgs = []
-        for m in matches:
-            pkgs.append(Package(m[2], m[1], entry['group'], m[0], None))
+        for package in xdcc_packages:
+            match = re.search(patt, package['f'])
+            if not match is None:
+                ep_num = match.group(1)
+                pkg_num = package['n']
+                bot = package['b']
+                line = package['f']
+                pkgs.append(Package(ep_num, pkg_num, bot, group, line, None))
         xdcc_info[key] = pkgs
     return xdcc_info
 

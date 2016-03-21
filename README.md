@@ -35,8 +35,8 @@ anime list | **s**   | toggle XDCC layer
 anime list | **l**   | increase watched episodes count by one
 anime list | **h**   | decrease watched episodes count by one
 anime list | **m**   | enter move mode (also used to add anime from search results)
-xdcc list  | **c**   | toggle raw XDCC lines
-xdcc list  | **y**   | copy package number of current XDCC line to clipboard<sup>[1]</sup>
+xdcc list  | **c**   | toggle raw XDCC filenames
+xdcc list  | **y**   | copy XDCC command to clipboard<sup>[1]</sup>
 move mode  | **w&#124;c&#124;p&#124;h&#124;d** | move/add anime to watching&#124;completed&#124;plan to watch&#124;on hold&#124;dropped list
 move mode  | **[^wcphd]** | leave move mode
 
@@ -46,16 +46,17 @@ interface
 ---------
 gui element      | meaning
 ---------------- | -------
-`^<title> '`     | entry in xdcc.json but no matches in retrieved packlist
-`^<title> *`     | entry in xdcc.json, matches in retrieved packlis, no unwatched eps
-`^<title> *<num>`| entry in xdcc.json, matches in retrieved packlis, `<num>` unwatched eps
+`^<title> '`     | entry in xdcc.json but no matches in retrieved packlists
+`^<title> *`     | entry in xdcc.json, matches in retrieved packlists, no unwatched eps
+`^<title> *<num>`| entry in xdcc.json, matches in retrieved packlists, `<num>` unwatched eps
 `[w|c|p|h|d]$`   | anime under cursor is in move mode
 
 xdcc integration
 ----------------
-look at the file `xdcc.json`, it's pretty self explanatory. for each anime fill in a url to a packlist, a title and group to search for and the anilist id (that's what the ID layer is good for).
+xdcc integration is tailored towards the output of a piece of software called *XDCC Parser*.
+
+the file `xdcc.json` contains two arrays. `anime` for anime (duh) and `sources` for xdcc packlists. an anime entry requires a title (as it appears in a packlist), a subgroup and the anilist id (that's what the ID layer is good for). all source entries are set to inactive by default to keep startup time minimal for people not using the xdcc integration.
 
 planned features
 ----------------
-* change rating of anime
 * remove anime
