@@ -218,7 +218,7 @@ class PackageList(List):
     def __init__(self, pkgs, parent):
         self.parent = parent
         self.raw_mode = False
-        sortd = sorted(pkgs, key=lambda k: k.ep_num)
+        sortd = sorted(pkgs, key=lambda k: int(k.ep_num))
         List.__init__(self, sortd)
     def toggleRawMode(self):
         self.raw_mode = not self.raw_mode
@@ -416,7 +416,8 @@ def getXDCCInfo():
             titles.append(entry['packlist_title'])
 
     # access sources
-    xdcc_packages = []
+    xdcc_packages  = []
+    xdcc_filenames = []
     for url in urls:
         host = url.split('/', 1)[0]
         path = '/{0}'.format(url.split('/', 1)[1])
@@ -447,19 +448,40 @@ def getXDCCInfo():
                 if title in line_json['f']:
                     relevant = relevant + 1
             if relevant == 2:
-                xdcc_packages.append(line_json)
+                if line_json['f'] not in xdcc_filenames:
+                    xdcc_filenames.append(line_json['f'])
+                    xdcc_packages.append(line_json)
     # build xdcc info package
     xdcc_info = {}
     for entry in xdcc_local_data['anime']:
         key = entry['al_id']
         group = entry['group']
         title = entry['packlist_title']
-        patt = re.compile('^\[{0}].+?{1}'               # [group] title
-                          '[^\[\(0-9]+?'                # not [ ( 0-9
-                          '([0-9]+).*$'.format(group, title), re.M) # ep num
+        # [group] title ... ␣-␣ep num[␣|.]
+        patt1 = re.compile('^\[{0}].+?{1}.+? - '
+                          '([0-9]+)[\s\.].*$'.format(group, title), re.M)
+        # [group] title ... ep_num
+        patt2 = re.compile('^\[{0}].+?{1}'
+                          '[^\[\(0-9]+?'
+                          '([0-9]+).*$'.format(group, title), re.M)
+        # title ... ep_num
+        patt3 = re.compile('^.+?{1}'
+                          '[^\[\(0-9]+?'
+                          '([0-9]+).*$'.format(group, title), re.M)
         pkgs = []
         for package in xdcc_packages:
-            match = re.search(patt, package['f'])
+            match = None
+            m1 = re.search(patt1, package['f'])
+            if not m1 is None:
+                match = m1
+            if m1 is None:
+                m2 = re.search(patt2, package['f'])
+                if not m2 is None:
+                    match = m2
+            if m1 is None and m2 is None:
+                m3 = re.search(patt3, package['f'])
+                if not m3 is None:
+                    match = m3
             if not match is None:
                 ep_num = match.group(1)
                 pkg_num = package['n']
