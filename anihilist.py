@@ -429,16 +429,22 @@ def getXDCCInfo():
         url = urllib.parse.quote(path)
         conn.request(method='GET', url=url, headers=headers)
         resp_obj = conn.getresponse()
-        resp_str = resp_obj.read().decode('utf-8')
+        try:
+            resp_str = resp_obj.read().decode('utf-8')
+        except:
+            continue
 
         resp_lines = resp_str.splitlines()
         for line in resp_lines:
-            almost_json = "{{{0}".format(line.split('{', 1)[1])
-            almost_json = almost_json.replace('{b:"' ,'{"b":"' )
-            almost_json = almost_json.replace('", n:','", "n":')
-            almost_json = almost_json.replace(', s:' ,', "s":' )
-            almost_json = almost_json.replace(', f:"',', "f":"')
-            line_json = json.loads(almost_json[0:-1])
+            try:
+                almost_json = "{{{0}".format(line.split('{', 1)[1])
+                almost_json = almost_json.replace('{b:"' ,'{"b":"' )
+                almost_json = almost_json.replace('", n:','", "n":')
+                almost_json = almost_json.replace(', s:' ,', "s":' )
+                almost_json = almost_json.replace(', f:"',', "f":"')
+                line_json = json.loads(almost_json[0:-1])
+            except:
+                continue
             # only gather relevant packages
             relevant = 0
             for group in groups:
