@@ -425,14 +425,23 @@ def getXDCCInfo():
         headers = {}
         headers['User-Agent'] = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
 
-        conn = http.client.HTTPSConnection(host)
-        url = urllib.parse.quote(path)
-        conn.request(method='GET', url=url, headers=headers)
-        resp_obj = conn.getresponse()
+        # HTTPS
         try:
+            conn = http.client.HTTPSConnection(host)
+            url = urllib.parse.quote(path)
+            conn.request(method='GET', url=url, headers=headers)
+            resp_obj = conn.getresponse()
             resp_str = resp_obj.read().decode('utf-8')
         except:
-            continue
+            # HTTP
+            try:
+                conn = http.client.HTTPSConnection(host)
+                url = urllib.parse.quote(path)
+                conn.request(method='GET', url=url, headers=headers)
+                resp_obj = conn.getresponse()
+                resp_str = resp_obj.read().decode('utf-8')
+            except:
+                continue
 
         resp_lines = resp_str.splitlines()
         for line in resp_lines:
