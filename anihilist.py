@@ -3,13 +3,14 @@
 import curses
 import http.client
 import json
+import logging
 import os
 import re
+import sys
 import time
 import unicodedata
 import urllib.parse
 import urllib.request
-import sys
 
 NAV_U       = 'k'
 NAV_D       = 'j'
@@ -228,6 +229,7 @@ class PackageList(List):
         try:
             os.system('echo -n "{0}" | xclip'.format(msg))
         except:
+            logging.exception('xclip call failed.')
             pass
     def display(self):
         sub_list = self._getOnScreen()
@@ -271,6 +273,7 @@ def setup():
         newAccessToken(auth_code)
     else:
         getAccessToken() # may have to be refreshed
+    logging.basicConfig(level=logging.INFO, filename='/tmp/anihilist.log')
 
 def callAPI(method, url, data=None, headers={}):
     conn = http.client.HTTPSConnection('anilist.co', 443)
@@ -281,6 +284,8 @@ def callAPI(method, url, data=None, headers={}):
     try:
         resp_data = json.loads(resp_json)
     except ValueError:
+        logging.exception('json.loads failed for '
+                          'reponse from {0}\n"{1}"'.format(url, resp_data))
         return False
     return resp_data
 
@@ -427,21 +432,24 @@ def getXDCCInfo():
 
         # HTTPS
         try:
+            logging.info("Connecting to {0}{1} via HTTPS.".format(host, path))
             conn = http.client.HTTPSConnection(host)
             url = urllib.parse.quote(path)
             conn.request(method='GET', url=url, headers=headers)
             resp_obj = conn.getresponse()
             resp_str = resp_obj.read().decode('utf-8')
         except:
+            logging.exception('HTTPS connection to {0} failed.'.format(host))
             # HTTP
             try:
-                conn = http.client.HTTPSConnection(host)
+                logging.info('Connecting to {0} via HTTP.'.format(host, path))
+                conn = http.client.HTTPConnection(host)
                 url = urllib.parse.quote(path)
                 conn.request(method='GET', url=url, headers=headers)
                 resp_obj = conn.getresponse()
                 resp_str = resp_obj.read().decode('utf-8')
             except:
-                continue
+                logging.exception('HTTP connection to {0} failed.'.format(host))
 
         resp_lines = resp_str.splitlines()
         for line in resp_lines:
@@ -453,6 +461,8 @@ def getXDCCInfo():
                 almost_json = almost_json.replace(', f:"',', "f":"')
                 line_json = json.loads(almost_json[0:-1])
             except:
+                logging.exception('json.loads failed for line: '
+                                  '"{0}"'.format(line))
                 continue
             # only gather relevant packages
             relevant = 0
