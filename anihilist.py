@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import sys
+import tempfile
 import time
 import unicodedata
 import urllib.parse
@@ -273,7 +274,8 @@ def setup():
         newAccessToken(auth_code)
     else:
         getAccessToken() # may have to be refreshed
-    logging.basicConfig(level=logging.INFO, filename='/tmp/anihilist.log')
+    logging.basicConfig(level=logging.INFO, filename=tempfile.gettempdir()
+                                                       + '/anihilist.log')
 
 def callAPI(method, url, data=None, headers={}):
     conn = http.client.HTTPSConnection('anilist.co', 443)
