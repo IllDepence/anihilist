@@ -566,11 +566,13 @@ def main(stdscr):
             if list_type == LIST_SEARCH:
                 search_results.scroll(DOWN)
         if c==NAV_L:
-            updateWatchedCount(anime_curs, -1)
-            anime_list.updateEntries(anilist_data=getAnilistData())
+            if list_type == LIST_ANIME:
+                updateWatchedCount(anime_curs, -1)
+                anime_list.updateEntries(anilist_data=getAnilistData())
         if c==NAV_R:
-            updateWatchedCount(anime_curs, 1)
-            anime_list.updateEntries(anilist_data=getAnilistData())
+            if list_type == LIST_ANIME:
+                updateWatchedCount(anime_curs, 1)
+                anime_list.updateEntries(anilist_data=getAnilistData())
         if c=='m':
             if list_type==LIST_ANIME:
                 if moveToList(anime_curs, ANIME_MOVE):
@@ -612,6 +614,7 @@ def main(stdscr):
             if list_type==LIST_ANIME:
                 stdscr.clear()
                 list_type = LIST_SEARCH
+                search_results.cursor = 0
                 searchAnime(search_results)
             elif list_type==LIST_SEARCH:
                 stdscr.clear()
