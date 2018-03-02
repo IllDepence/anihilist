@@ -49,7 +49,7 @@ gui element      | meaning
 `^<title> '`     | entry in xdcc.json but no matches in retrieved packlists
 `^<title> *`     | entry in xdcc.json, matches in retrieved packlists, no unwatched eps
 `^<title> *<num>`| entry in xdcc.json, matches in retrieved packlists, `<num>` unwatched eps
-`[w|c|p|h|d]$`   | anime under cursor is in move mode
+`[w&#124;c&#124;p&#124;h&#124;d]$`   | anime under cursor is in move mode
 
 xdcc integration
 ----------------
